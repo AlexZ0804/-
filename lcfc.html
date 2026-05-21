@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LCFC 微节能大作战 - 智慧答题系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 高级深空科技主题 */
+        body { 
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            color: #f8fafc; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            -webkit-tap-highlight-color: transparent; 
+            overflow: hidden;
+        }
+        
+        /* 玻璃拟物态高级卡片 */
+        .glass-bg { 
+            background: rgba(30, 41, 59, 0.6); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* LCFC 品牌色定制 */
+        .brand-text { color: #10b981; }
+        .brand-bg { background-image: linear-gradient(135deg, #059669 0%, #10b981 100%); }
+        .brand-bg:active { transform: scale(0.98); }
+        
+        /* 进度条流动光效 */
+        .progress-bar-fill { 
+            background: linear-gradient(90deg, #059669, #34d399, #059669);
+            background-size: 200% 100%;
+            animation: flowLight 2s linear infinite;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        @keyframes flowLight { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+        
+        /* 选项交互升级 */
+        .option-item { 
+            transition: all 0.25s ease; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            background: rgba(15, 23, 42, 0.4);
+        }
+        .option-item.selected { 
+            background-color: rgba(16, 185, 129, 0.15); 
+            border-color: #10b981; 
+            box-shadow: inset 0 0 15px rgba(16, 185, 129, 0.1);
+        }
+        
+        /* 输入框高级感 */
+        .custom-input {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+        .custom-input:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 relative">
+
+    <div class="absolute top-[-15%] left-[-10%] w-96 h-96 bg-emerald-600/20 rounded-full mix-blend-screen filter blur-[100px] animate-pulse"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-80 h-80 bg-teal-600/20 rounded-full mix-blend-screen filter blur-[80px]"></div>
+
+    <div id="app-container" class="glass-bg w-full max-w-md rounded-3xl relative z-10 flex flex-col h-[85vh] max-h-[750px]">
+        
+        <div id="page-login" class="flex-1 flex flex-col justify-center p-8 space-y-8 animate-fade-in">
+            <div class="text-center space-y-3">
+                <div class="mx-auto w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mb-4 shadow-lg">
+                    <svg class="w-8 h-8 brand-text" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <h1 class="text-3xl font-bold tracking-widest text-white">ESG <span class="brand-text text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">零碳先锋</span></h1>
+                <p class="text-slate-400 text-sm tracking-wide">AI赋能 · 识别工厂隐形浪费</p>
+            </div>
+            
+            <div class="space-y-5 pt-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">姓名 NAME</label>
+                    <input type="text" id="input-name" placeholder="请输入您的真实姓名" class="custom-input w-full px-5 py-3.5 rounded-xl focus:outline-none text-base text-white placeholder-slate-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">工号 EMP ID</label>
+                    <input type="text" id="input-emp-id" placeholder="例: H250LF5" class="custom-input w-full px-5 py-3.5 rounded-xl focus:outline-none text-base font-mono text-white placeholder-slate-500 uppercase">
+                </div>
+                <p id="login-error" class="text-red-400 text-sm mt-2 hidden text-center font-medium bg-red-400/10 py-2 rounded-lg"></p>
+                
+                <button onclick="app.startQuiz()" class="w-full brand-bg text-white font-bold py-4 rounded-xl shadow-[0_8px_20px_rgba(16,185,129,0.3)] transition-all text-lg tracking-wider mt-4">
+                    进入挑战
+                </button>
+            </div>
+        </div>
+
+        <div id="page-quiz" class="hidden flex-1 flex flex-col p-6 sm:p-8">
+            <div class="flex justify-between items-end mb-6">
+                <div class="w-2/3">
+                    <div class="text-slate-400 text-xs mb-2 font-mono tracking-wider" id="progress-text">PROCESS 1/5</div>
+                    <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="h-full progress-bar-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <div class="text-right w-1/3 text-2xl font-mono font-black text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]" id="timer-display">02:00</div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto pr-2 mt-2">
+                <div class="inline-block px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-md mb-3 border border-emerald-500/30" id="question-type">单选题</div>
+                <h2 id="question-title" class="text-xl font-medium leading-relaxed mb-8 text-slate-100">题目加载中...</h2>
+                <div id="options-list" class="space-y-3 pb-6">
+                    </div>
+            </div>
+
+            <div class="pt-5 mt-auto bg-gradient-to-t from-slate-900/80 to-transparent">
+                <button onclick="app.submitAnswer()" class="w-full bg-white/10 hover:bg-white/15 text-white font-bold py-4 rounded-xl backdrop-blur-sm border border-white/10 transition-all text-lg tracking-wider active:scale-95">
+                    确认提交
+                </button>
+            </div>
+        </div>
+
+        <div id="page-result" class="hidden flex-1 flex flex-col justify-center p-8 text-center space-y-6 relative">
+            <div id="result-icon" class="text-7xl mb-4 drop-shadow-2xl">🏆</div>
+            <div>
+                <h2 id="result-status" class="text-3xl font-bold mb-2">核算中...</h2>
+                <p class="text-slate-400 text-sm">综合评分体系</p>
+            </div>
+            
+            <div class="text-8xl font-black font-mono brand-text drop-shadow-[0_0_20px_rgba(16,185,129,0.4)]" id="result-score">0</div>
+
+            <div id="success-certificate" class="hidden bg-emerald-900/30 border border-emerald-500/40 rounded-2xl p-5 mt-4 backdrop-blur-md">
+                <p class="text-emerald-400 font-bold mb-3 flex items-center justify-center gap-2 text-lg">
+                    <span>✅</span> 获得限定帆布袋凭证
+                </p>
+                <div class="bg-white/90 w-32 h-32 mx-auto mb-3 rounded-xl flex items-center justify-center shadow-inner">
+                    <span class="text-slate-800 text-xs font-bold border-2 border-slate-800 p-2 rounded transform -rotate-12">LCFC-ESG</span>
+                </div>
+                <p class="text-xs text-slate-400">请截图此页，向现场工作人员出示核销</p>
+            </div>
+
+            <button onclick="location.reload()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-xl transition-all mt-auto text-lg">
+                返回首页
+            </button>
+            
+            <button onclick="app.exportExcel()" class="absolute top-4 right-4 text-xs text-slate-600 hover:text-emerald-400 underline decoration-slate-600 underline-offset-4 transition-colors">
+                ⬇️ 导出Excel报表
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 配置中心与题库引擎
+        // ==========================================
+        const APP_CONFIG = {
+            timeLimit: 120, // 答题总时长(秒)
+            passScore: 80,  // 及格分数
+            // 完美还原 Word 题库
+            questions: [
+                {
+                    type: 'single', // 单选
+                    title: "1. ESG 中的“E”代表环境，低碳主要是减少哪种气体排放？",
+                    options: ["一氧化碳", "二氧化碳", "氧气"],
+                    correct: [1] // 索引从0开始，1代表B选项
+                },
+                {
+                    type: 'single',
+                    title: "2. 以下哪项属于工厂日常节能措施？",
+                    options: ["设备空转不关机", "按需启停、减少空载", "长明灯不关"],
+                    correct: [1]
+                },
+                {
+                    type: 'single',
+                    title: "3. 践行 ESG，下班关闭电脑、灯光和空调电源，是节能减碳好习惯。",
+                    options: ["正确", "错误"],
+                    correct: [0] // 0代表正确
+                },
+                {
+                    type: 'single',
+                    title: "4. 生产线无人作业时，保持设备空转，符合节能减碳要求。",
+                    options: ["正确", "错误"],
+                    correct: [1] // 1代表错误
+                },
+                {
+                    type: 'multi', // 多选
+                    title: "5. 属于企业 ESG 节能减碳行为的有？",
+                    options: ["人走灯灭、关闭空调", "减少设备空载运行", "下班后电脑长期待机", "及时关闭闲置设备电源"],
+                    correct: [0, 1, 3] // A, B, D
+                }
+            ]
+        };
+
+        const app = {
+            user: { name: '', empId: '' },
+            currentIndex: 0,
+            score: 0,
+            timeLeft: APP_CONFIG.timeLimit,
+            timer: null,
+            selectedOptions: [], // 改为数组，兼容多选
+            totalQuestions: APP_CONFIG.questions.length,
+
+            el: {
+                pageLogin: document.getElementById('page-login'),
+                pageQuiz: document.getElementById('page-quiz'),
+                pageResult: document.getElementById('page-result'),
+                timerDisplay: document.getElementById('timer-display'),
+                qTitle: document.getElementById('question-title'),
+                qType: document.getElementById('question-type'),
+                oList: document.getElementById('options-list'),
+                progressBar: document.getElementById('progress-bar'),
+                progressText: document.getElementById('progress-text')
+            },
+
+            // 1. 启动与校验
+            startQuiz: function() {
+                const name = document.getElementById('input-name').value.trim();
+                const empId = document.getElementById('input-emp-id').value.trim().toUpperCase();
+                const err = document.getElementById('login-error');
+                
+                if(!name || !empId) {
+                    err.innerText = "姓名和工号不能为空！";
+                    err.classList.remove('hidden');
+                    return;
+                }
+                if(empId.length < 4) {
+                    err.innerText = "工号格式有误，请重新核对！";
+                    err.classList.remove('hidden');
+                    return;
+                }
+                
+                err.classList.add('hidden');
+                this.user.name = name;
+                this.user.empId = empId;
+
+                this.el.pageLogin.classList.add('hidden');
+                this.el.pageQuiz.classList.remove('hidden');
+                this.el.pageQuiz.classList.add('flex');
+
+                this.startTimer();
+                this.renderQuestion();
+            },
+
+            // 2. 倒计时引擎
+            startTimer: function() {
+                this.updateTimerUI();
+                this.timer = setInterval(() => {
+                    this.timeLeft--;
+                    this.updateTimerUI();
+                    if(this.timeLeft <= 0) {
+                        clearInterval(this.timer);
+                        this.submitAnswer(true); // 强制结算
+                    }
+                }, 1000);
+            },
+
+            updateTimerUI: function() {
+                let m = Math.floor(this.timeLeft / 60).toString().padStart(2, '0');
+                let s = (this.timeLeft % 60).toString().padStart(2, '0');
+                this.el.timerDisplay.innerText = `${m}:${s}`;
+                if(this.timeLeft <= 10) {
+                    this.el.timerDisplay.classList.add('text-red-500', 'animate-pulse');
+                }
+            },
+
+            // 3. 题目渲染引擎
+            renderQuestion: function() {
+                this.selectedOptions = [];
+                const q = APP_CONFIG.questions[this.currentIndex];
+                
+                this.el.progressText.innerText = `PROCESS ${this.currentIndex + 1} / ${this.totalQuestions}`;
+                this.el.progressBar.style.width = `${((this.currentIndex) / this.totalQuestions) * 100}%`;
+                
+                this.el.qTitle.innerText = q.title;
+                if(q.type === 'single') {
+                    this.el.qType.innerText = "单选题";
+                    this.el.qType.className = "inline-block px-3 py-1 bg-blue-500/20 text-blue-400 text-xs font-bold rounded-md mb-4 border border-blue-500/30";
+                } else {
+                    this.el.qType.innerText = "多选题 (请选出所有正确项)";
+                    this.el.qType.className = "inline-block px-3 py-1 bg-amber-500/20 text-amber-400 text-xs font-bold rounded-md mb-4 border border-amber-500/30";
+                }
+                
+                let html = '';
+                q.options.forEach((opt, index) => {
+                    const prefix = String.fromCharCode(65 + index);
+                    html += `
+                        <div onclick="app.toggleOption(${index})" id="opt-${index}" class="option-item p-4 rounded-xl cursor-pointer flex items-center gap-4">
+                            <div class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-sm shadow-inner transition-colors" id="opt-icon-${index}">${prefix}</div>
+                            <span class="flex-1 text-slate-200">${opt}</span>
+                        </div>
+                    `;
+                });
+                this.el.oList.innerHTML = html;
+            },
+
+            // 4. 选项逻辑控制 (兼容单选/多选)
+            toggleOption: function(index) {
+                const q = APP_CONFIG.questions[this.currentIndex];
+                
+                if (q.type === 'single') {
+                    this.selectedOptions = [index];
+                    document.querySelectorAll('.option-item').forEach(el => el.classList.remove('selected'));
+                    document.querySelectorAll('[id^="opt-icon-"]').forEach(el => {
+                        el.classList.remove('brand-bg', 'text-white');
+                    });
+                } else {
+                    // 多选逻辑
+                    const idx = this.selectedOptions.indexOf(index);
+                    if (idx > -1) {
+                        this.selectedOptions.splice(idx, 1); // 存在则移除
+                    } else {
+                        this.selectedOptions.push(index); // 不在则添加
+                    }
+                }
+
+                // 更新UI状态
+                if(q.type === 'multi') {
+                    const item = document.getElementById(`opt-${index}`);
+                    const icon = document.getElementById(`opt-icon-${index}`);
+                    if(this.selectedOptions.includes(index)){
+                        item.classList.add('selected');
+                        icon.classList.add('brand-bg', 'text-white');
+                    } else {
+                        item.classList.remove('selected');
+                        icon.classList.remove('brand-bg', 'text-white');
+                    }
+                } else {
+                    document.getElementById(`opt-${index}`).classList.add('selected');
+                    document.getElementById(`opt-icon-${index}`).classList.add('brand-bg', 'text-white');
+                }
+            },
+
+            // 5. 提交答案并判断
+            submitAnswer: function(forceEnd = false) {
+                if(!forceEnd && this.selectedOptions.length === 0) {
+                    alert('请至少选择一个答案！');
+                    return;
+                }
+
+                if(!forceEnd) {
+                    const currentQ = APP_CONFIG.questions[this.currentIndex];
+                    // 数组排序后对比转字符串判定 (多选全对才给分)
+                    const userAns = this.selectedOptions.sort().toString();
+                    const correctAns = currentQ.correct.sort().toString();
+                    
+                    if(userAns === correctAns) {
+                        this.score += (100 / this.totalQuestions);
+                    }
+                    this.currentIndex++;
+                }
+
+                if(forceEnd || this.currentIndex >= this.totalQuestions) {
+                    this.el.progressBar.style.width = '100%';
+                    setTimeout(() => this.endQuiz(), 300);
+                } else {
+                    this.renderQuestion();
+                }
+            },
+
+            // 6. 结束清算与本地数据存储
+            endQuiz: function() {
+                clearInterval(this.timer);
+                this.el.pageQuiz.classList.remove('flex');
+                this.el.pageQuiz.classList.add('hidden');
+                this.el.pageResult.classList.remove('hidden');
+                this.el.pageResult.classList.add('flex');
+
+                const finalScore = Math.round(this.score);
+                document.getElementById('result-score').innerText = finalScore;
+
+                const statusEl = document.getElementById('result-status');
+                const iconEl = document.getElementById('result-icon');
+                const isPassed = finalScore >= APP_CONFIG.passScore;
+                
+                if(isPassed) {
+                    statusEl.innerText = "挑战成功！";
+                    statusEl.className = "text-3xl font-bold mb-2 text-emerald-400 drop-shadow-md";
+                    iconEl.innerText = "🏆";
+                    document.getElementById('success-certificate').classList.remove('hidden');
+                } else {
+                    statusEl.innerText = "挑战失败";
+                    statusEl.className = "text-3xl font-bold mb-2 text-red-400 drop-shadow-md";
+                    iconEl.innerText = "🔋";
+                    document.getElementById('result-score').classList.remove('brand-text');
+                    document.getElementById('result-score').classList.add('text-slate-500');
+                }
+
+                // 🌟 核心：将答题记录保存到浏览器的 localStorage 中
+                const record = {
+                    name: this.user.name,
+                    empId: this.user.empId,
+                    time: new Date().toLocaleString('zh-CN'),
+                    score: finalScore,
+                    passed: isPassed ? "通过" : "未通过"
+                };
+                
+                let records = JSON.parse(localStorage.getItem('lcfc_quiz_records') || '[]');
+                records.push(record);
+                localStorage.setItem('lcfc_quiz_records', JSON.stringify(records));
+            },
+
+            // 7. 管理员报表导出工具 (纯前端生成Excel/CSV)
+            exportExcel: function() {
+                const records = JSON.parse(localStorage.getItem('lcfc_quiz_records') || '[]');
+                if(records.length === 0) {
+                    alert("暂无任何答题记录可以导出！");
+                    return;
+                }
+
+                // 构造 CSV 内容，添加 BOM 头防止 Excel 中文乱码
+                let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
+                csvContent += "姓名,工号,交卷时间,最终得分,是否获得奖品\n";
+                
+                records.forEach(row => {
+                    csvContent += `${row.name},${row.empId},${row.time},${row.score},${row.passed}\n`;
+                });
+
+                // 创建隐藏的下载链接并触发点击
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `LCFC答题活动数据报表_${new Date().getTime()}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        };
+    </script>
+</body>
+</html>
